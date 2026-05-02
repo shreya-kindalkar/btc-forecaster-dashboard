@@ -367,5 +367,5 @@ current_prediction = {
 }
 
 # Only save if not already saved this hour
-if live_df.empty or live_df['predicted_timestamp'].iloc[-1].hour != current_time.hour:
+if live_df.empty or live_df['predicted_timestamp'].iloc[-1].strftime('%Y-%m-%d %H') != current_time.strftime('%Y-%m-%d %H'):
     save_live_prediction(current_prediction)
