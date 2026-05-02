@@ -96,7 +96,7 @@ st.markdown("""
 <div style="text-align: center; padding: 20px 0;">
     <h1 style="margin: 0; font-size: 2.5em;">🚀 BTC/USDT 1-Hour Forecaster</h1>
     <p style="margin: 5px 0; font-size: 1.1em; color: #888;">
-        AI-powered 95% prediction intervals | 30-day validated | Live tracking
+        95% prediction intervals | 30-day validated | Live tracking
     </p>
 </div>
 """, unsafe_allow_html=True)
