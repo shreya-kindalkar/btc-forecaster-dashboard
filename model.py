@@ -81,10 +81,6 @@ BUGS FIXED FROM STARTER NOTEBOOK:
 
 import numpy as np
 import pandas as pd
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
 import requests
 import json
 import logging
