@@ -11,12 +11,9 @@ st.title("BTC/USDT 1-Hour Forecaster")
 st.caption("Backtest results from 30-day walk-forward validation")
 
 # ================= LOAD BACKTEST RESULTS =================
-@st.cache_data(ttl=3600)  # reload every hour
+@st.cache_data(ttl=3600)
 def load_backtest_results(filepath="backtest_results.jsonl"):
-    """
-    Load precomputed backtest results from JSONL file.
-    This NEVER recomputes the model — just reads what backtest.py wrote.
-    """
+    """Load precomputed backtest results from JSONL file."""
     if not Path(filepath).exists():
         st.error(f"❌ File not found: {filepath}")
         st.error("Instructions: Export backtest_results.jsonl from Colab and push to GitHub")
@@ -26,7 +23,7 @@ def load_backtest_results(filepath="backtest_results.jsonl"):
     try:
         with open(filepath, 'r') as f:
             for line in f:
-                if line.strip():  # skip empty lines
+                if line.strip():
                     rows.append(json.loads(line))
     except json.JSONDecodeError as e:
         st.error(f"❌ Corrupt JSONL file: {e}")
@@ -131,38 +128,6 @@ fig.update_layout(
     height=400,
 )
 st.plotly_chart(fig, use_container_width=True)
-
-# ================= COVERAGE BY HOUR =================
-st.subheader("Coverage by UTC Hour")
-
-hourly = results_df.groupby('hour_utc').agg(
-    coverage=('covered', 'mean'),
-    count=('covered', 'count'),
-).reset_index()
-
-fig2 = go.Figure()
-fig2.add_trace(go.Bar(
-    x=hourly['hour_utc'].astype(int),
-    y=hourly['coverage'],
-    name='Coverage',
-    marker=dict(
-        color=['red' if c < 0.90 else 'green' for c in hourly['coverage']]
-    ),
-    text=hourly['count'],
-    textposition='outside',
-))
-
-fig2.add_hline(y=0.95, line_dash='dash', line_color='blue', 
-               annotation_text='Target 95%')
-
-fig2.update_layout(
-    title="Coverage by UTC Hour (labels = # predictions)",
-    xaxis_title="UTC Hour",
-    yaxis_title="Coverage Rate",
-    height=350,
-    showlegend=False,
-)
-st.plotly_chart(fig2, use_container_width=True)
 
 # ================= VOLATILITY REGIME BREAKDOWN =================
 st.subheader("Performance by Volatility Regime")
