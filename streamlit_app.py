@@ -246,6 +246,19 @@ with col4:
 
 st.divider()
 
+# ================= COVERAGE BY HOUR =================
+st.subheader("Coverage by UTC Hour")
+
+# ✅ FIX: create missing column
+results_df['hour_utc'] = results_df['timestamp'].dt.hour
+
+hourly = results_df.groupby('hour_utc').agg(
+    coverage=('covered', 'mean'),
+    count=('covered', 'count'),
+).reset_index()
+
+st.dataframe(hourly, use_container_width=True)
+
 # ================= REGIME PERFORMANCE TABLE =================
 st.subheader("🔍 Performance by Volatility Regime")
 
