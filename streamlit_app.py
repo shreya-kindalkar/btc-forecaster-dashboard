@@ -132,21 +132,21 @@ with col3:
 
 st.divider()
 
-# ================= MAIN CHART (BIG & BEAUTIFUL) =================
+# ================= MAIN CHART  =================
 st.subheader("📊 Price Movement & Prediction Range (Last 50 Hours)")
 
 recent = results_df.tail(50).reset_index(drop=True)
 
 fig = go.Figure()
 
-# Prediction interval (colored background)
+# Prediction interval
 fig.add_trace(go.Scatter(
     x=recent['timestamp'],
     y=recent['predicted_high'],
     name='Upper Bound',
     mode='lines',
     line=dict(color='rgba(0,150,200,0)', width=0),
-    showlegend=False,
+    showlegend=True,
 ))
 
 fig.add_trace(go.Scatter(
@@ -166,7 +166,7 @@ fig.add_trace(go.Scatter(
     x=recent['timestamp'],
     y=recent['actual'],
     name='Actual Price',
-    mode='lines+markers',
+    mode='lines',
     line=dict(color='#2E86AB', width=3),
     marker=dict(size=4),
     hovertemplate='<b>%{x|%Y-%m-%d %H:%M}</b><br>Price: $%{y:,.0f}<extra></extra>'
@@ -213,7 +213,7 @@ col1, col2, col3, col4 = st.columns(4, gap="medium")
 with col1:
     delta_color = "normal" if abs(coverage - 0.95) < 0.02 else "inverse"
     st.metric(
-        "✅ Coverage",
+        "Coverage",
         f"{coverage:.2%}",
         delta=f"{(coverage - 0.95)*100:+.2f}% vs 0.95",
         delta_color=delta_color,
@@ -222,7 +222,7 @@ with col1:
 
 with col2:
     st.metric(
-        "❌ Misses",
+        "Misses",
         f"{n_violations}/{len(results_df)}",
         delta=f"{100*n_violations/len(results_df):.1f}%",
         help="Out of 246 predictions"
@@ -230,7 +230,7 @@ with col2:
 
 with col3:
     st.metric(
-        "🎯 Winkler Score",
+        "Winkler Score",
         f"{mean_winkler:.0f}",
         delta="Lower is better",
         help="Combined accuracy & tightness metric"
@@ -238,7 +238,7 @@ with col3:
 
 with col4:
     st.metric(
-        "📏 Median Width",
+        "Median Width",
         f"${median_width:,.0f}",
         delta="Interval size",
         help="Average range width across all predictions"
@@ -249,7 +249,6 @@ st.divider()
 # ================= COVERAGE BY HOUR =================
 st.subheader("Coverage by UTC Hour")
 
-# ✅ FIX: create missing column
 results_df['hour_utc'] = results_df['timestamp'].dt.hour
 
 hourly = results_df.groupby('hour_utc').agg(
@@ -269,7 +268,6 @@ regime_stats = results_df.groupby('regime').agg(
     mean_winkler=('winkler', 'mean'),
 ).round(4)
 
-# Rename for display
 regime_stats.columns = ['# Predictions', 'Coverage', 'Mean Width ($)', 'Winkler Score']
 
 col1, col2, col3 = st.columns([1, 1, 1])
@@ -359,7 +357,10 @@ with st.expander("📋 Raw Backtest Data"):
 
 with st.expander("ℹ️ Model Details"):
     st.write("""
-    **Architecture:** FIGARCH(1,1) + HAR-RV Blend (60% GARCH / 40% HAR)
+    **Architecture:** Volatility-Scaled GBM + HAR-RV Blend
+        - Rolling volatility + HAR multi-scale estimator  
+        - Regime-adjusted scaling  
+        - Skew-aware interval shifting
     
     **Volatility Regimes:**
     - 🌊 **Calm** (z-score < -0.5): Ranges scaled ×0.88
