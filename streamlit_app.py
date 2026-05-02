@@ -4,11 +4,15 @@ import plotly.graph_objects as go
 import json
 from pathlib import Path
 from datetime import datetime
+import os
 
 # ================= PAGE CONFIG =================
 st.set_page_config(page_title="BTC Forecaster", layout="wide")
 st.title("BTC/USDT 1-Hour Forecaster")
-st.caption("Backtest results from 30-day walk-forward validation")
+st.caption("Backtest results from 30-day walk-forward validation + Live Predictions")
+
+# ================= PERSISTENCE FILE =================
+LIVE_PREDICTIONS_FILE = "live_predictions.jsonl"
 
 # ================= LOAD BACKTEST RESULTS =================
 @st.cache_data(ttl=3600)
@@ -16,7 +20,6 @@ def load_backtest_results(filepath="backtest_results.jsonl"):
     """Load precomputed backtest results from JSONL file."""
     if not Path(filepath).exists():
         st.error(f"❌ File not found: {filepath}")
-        st.error("Instructions: Export backtest_results.jsonl from Colab and push to GitHub")
         st.stop()
     
     rows = []
@@ -38,21 +41,68 @@ def load_backtest_results(filepath="backtest_results.jsonl"):
     return df.sort_values('timestamp').reset_index(drop=True)
 
 
-# Load the data
-try:
-    results_df = load_backtest_results()
-except Exception as e:
-    st.error(f"❌ Failed to load backtest results: {e}")
-    st.stop()
+# ================= LOAD/SAVE LIVE PREDICTIONS =================
+def load_live_predictions():
+    """Load live predictions from file."""
+    if not Path(LIVE_PREDICTIONS_FILE).exists():
+        return pd.DataFrame()
+    
+    rows = []
+    try:
+        with open(LIVE_PREDICTIONS_FILE, 'r') as f:
+            for line in f:
+                if line.strip():
+                    rows.append(json.loads(line))
+    except:
+        return pd.DataFrame()
+    
+    if not rows:
+        return pd.DataFrame()
+    
+    df = pd.DataFrame(rows)
+    df['predicted_timestamp'] = pd.to_datetime(df['predicted_timestamp'])
+    if 'actual' in df.columns:
+        df['actual'] = pd.to_numeric(df['actual'], errors='coerce')
+    return df
 
-# ================= LATEST PREDICTION =================
+
+def save_live_prediction(prediction_data):
+    """Save a live prediction to the file."""
+    try:
+        with open(LIVE_PREDICTIONS_FILE, 'a') as f:
+            f.write(json.dumps(prediction_data) + "\n")
+    except Exception as e:
+        st.warning(f"Could not save live prediction: {e}")
+
+
+# ================= LOAD DATA =================
+results_df = load_backtest_results()
+live_df = load_live_predictions()
+
+# ================= LATEST PREDICTION (from backtest) =================
 latest = results_df.iloc[-1]
 
-st.subheader("Latest Prediction (Most Recent Hour)")
+st.subheader("Latest Backtest Prediction")
 col1, col2, col3 = st.columns(3)
-col1.metric("Current Price", f"${latest['actual']:,.2f}")
+col1.metric("Current Price (as of backtest)", f"${latest['actual']:,.2f}")
 col2.metric("Lower Bound (95%)", f"${latest['predicted_low']:,.2f}")
 col3.metric("Upper Bound (95%)", f"${latest['predicted_high']:,.2f}")
+
+# ================= SAVE CURRENT LIVE PREDICTION =================
+current_time = datetime.utcnow()
+current_prediction = {
+    "predicted_timestamp": current_time.isoformat(),
+    "predicted_low": float(latest['predicted_low']),
+    "predicted_high": float(latest['predicted_high']),
+    "current_price": float(latest['actual']),
+    "actual": None,  # Will be filled in when bar closes
+    "captured_at": current_time.isoformat()
+}
+
+# Only save if not already saved this hour (prevent duplicates)
+if live_df.empty or live_df['predicted_timestamp'].iloc[-1].hour != current_time.hour:
+    save_live_prediction(current_prediction)
+    live_df = load_live_predictions()  # Reload
 
 # ================= BACKTEST SUMMARY METRICS =================
 st.subheader("30-Day Backtest Performance")
@@ -72,8 +122,22 @@ col3.metric("Mean Winkler Score", f"{mean_winkler:.0f}",
             "(lower is better)")
 col4.metric("Median Width", f"${median_width:,.0f}")
 
+# ================= LIVE PREDICTION TIMELINE =================
+if not live_df.empty:
+    st.subheader("Live Prediction Timeline")
+    st.write(f"**Total predictions captured:** {len(live_df)}")
+    
+    # Create a timeline view
+    timeline_display = live_df[['predicted_timestamp', 'current_price', 'predicted_low', 'predicted_high', 'actual']].copy()
+    timeline_display.columns = ['Prediction Time (UTC)', 'Price at Prediction', 'Lower Bound', 'Upper Bound', 'Actual Price (when bar closed)']
+    timeline_display['Prediction Time (UTC)'] = timeline_display['Prediction Time (UTC)'].dt.strftime('%Y-%m-%d %H:%M UTC')
+    
+    st.dataframe(timeline_display.tail(20), use_container_width=True, hide_index=True)
+    
+    st.caption(f"Showing last 20 predictions. Total captured: {len(live_df)}")
+
 # ================= CHART: Last 50 Bars =================
-st.subheader("Price & Prediction Interval (Last 50 Hours)")
+st.subheader("Price & Prediction Interval (Last 50 Hours from Backtest)")
 
 recent = results_df.tail(50).reset_index(drop=True)
 
@@ -183,6 +247,8 @@ if st.checkbox("Show full backtest table"):
 
 # ================= FOOTER =================
 st.divider()
-st.caption(f"Data span: {results_df['timestamp'].min()} to {results_df['timestamp'].max()} UTC")
+st.caption(f"Backtest data span: {results_df['timestamp'].min()} to {results_df['timestamp'].max()} UTC")
 st.caption(f"Generated with FIGARCH(1,1) + HAR-RV blend (60% GARCH / 40% HAR)")
-st.caption(f"Last checked: {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}")
+st.caption(f"Last updated: {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}")
+if not live_df.empty:
+    st.caption(f"Live predictions tracked since: {live_df['predicted_timestamp'].min()}")
