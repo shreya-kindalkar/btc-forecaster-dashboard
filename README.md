@@ -36,6 +36,14 @@ Slight over-coverage is intentional. The Winkler score penalizes misses much har
 **Interval construction:** Closed-form quantiles from the Student-t distribution. No Monte Carlo — deterministic, fast, no sampling noise.
 
 ---
+# Why final model = v2
+Although later iterations (v3–v5) reduced interval width, they increased
+miss frequency. Because the Winkler score heavily penalizes misses,
+these changes worsened overall performance.
+
+Empirically, v2 achieved the best tradeoff between coverage (~0.95)
+and interval tightness. Further improvements were within statistical noise
+(±150 Winkler SE), so additional tuning was not justified.
 
 ## How It Works
 
