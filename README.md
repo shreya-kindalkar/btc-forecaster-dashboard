@@ -1,3 +1,5 @@
+Google Colab - https://colab.research.google.com/drive/1LuPNy5zo5v2H_t7lxaFa99AOs2v8FYbc
+
 # BTC/USDT 1-Hour Price Range Forecaster
 
 Predicts the next 1-hour price range for Bitcoin as a 95% confidence interval — not a point estimate.
