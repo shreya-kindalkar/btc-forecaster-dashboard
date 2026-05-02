@@ -83,13 +83,10 @@ streamlit run app.py
 ## Project Structure
 
 ```
-├── app.py                        # Dashboard + model pipeline
+├── streamlit_app.py                        # Dashboard + model pipeline
 ├── requirements.txt
 ├── backtest_results.jsonl        # Walk-forward backtest output
-├── notebooks/
-│   └── model_development.ipynb  # Exploratory analysis
-└── plots/
-    └── coverage_calibration.png
+├── model.py
 ```
 
 ---
