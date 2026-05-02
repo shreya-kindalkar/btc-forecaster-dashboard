@@ -135,7 +135,7 @@ st.plotly_chart(fig, use_container_width=True)
 # ================= COVERAGE BY HOUR =================
 st.subheader("Coverage by UTC Hour")
 
-hourly = results_df.groupby('hour_utc').agg(
+hourly = results_df.groupby('hour_utc', dropna=False).agg(
     coverage=('covered', 'mean'),
     count=('covered', 'count'),
 ).reset_index()
