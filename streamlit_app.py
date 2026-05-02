@@ -77,6 +77,20 @@ def save_live_prediction(prediction_data):
 results_df = load_backtest_results()
 live_df = load_live_predictions()
 
+from model import fetch_binance_1h, run_single_prediction
+
+@st.cache_data(ttl=300)
+def get_prices():
+    return fetch_binance_1h("BTCUSDT", days=30)
+
+# ================= LIVE PREDICTION (ADD HERE) =================
+try:
+    prices = get_prices()
+    latest_prediction = run_single_prediction(prices)
+except Exception as e:
+    st.error(f"Live prediction failed: {e}")
+    st.stop()
+
 # ================= HEADER WITH TITLE & CAPTION =================
 st.markdown("""
 <div style="text-align: center; padding: 20px 0;">
@@ -88,7 +102,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ================= LATEST PREDICTION (HERO METRICS) =================
-latest = results_df.iloc[-1]
+latest = latest_prediction
 
 col1, col2, col3 = st.columns([1, 1, 1], gap="large")
 
