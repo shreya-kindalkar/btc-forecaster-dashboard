@@ -75,6 +75,7 @@ def save_live_prediction(prediction_data):
 
 # ================= LOAD DATA =================
 results_df = load_backtest_results()
+results_df['covered'] = results_df['covered'].astype(bool)
 live_df = load_live_predictions()
 
 from model import fetch_binance_1h, run_single_prediction
@@ -204,7 +205,7 @@ st.divider()
 st.subheader("📈 30-Day Backtest Performance")
 
 coverage = results_df['covered'].mean()
-n_violations = (~results_df['covered']).sum()
+n_violations = (results_df['covered'] == False).sum()
 mean_winkler = results_df['winkler'].mean()
 median_width = results_df['width'].median()
 
