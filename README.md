@@ -19,9 +19,9 @@ Predicts the next 1-hour price range for Bitcoin as a 95% confidence interval â€
 
 | Metric | Value |
 |---|---|
-| Coverage (target: 0.95) | 0.967 |
-| Mean Winkler score | 1456 |
-| Mean interval width | $1,123 |
+| Coverage (target: 0.95) | 0.9675 |
+| Mean Winkler score | 1391 |
+| Mean interval width | $1,016 |
 
 Slight over-coverage is intentional. The Winkler score penalizes misses much harder than wide intervals, so conservative calibration minimizes expected score.
 
