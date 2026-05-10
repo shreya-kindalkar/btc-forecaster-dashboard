@@ -2,13 +2,13 @@ Google Colab - https://colab.research.google.com/drive/1LuPNy5zo5v2H_t7lxaFa99AO
 
 # BTC/USDT 1-Hour Price Range Forecaster
 
-Predicts the next 1-hour price range for Bitcoin as a 95% confidence interval — not a point estimate.
+Predicts the next 1-hour price range for Bitcoin as a 95% confidence interval using volatility-based modeling — not a point estimate.
 
 ---
 
 ## What This Project Does
 
-- Builds a probabilistic forecasting pipeline for BTC/USDT using FIGARCH + HAR-RV volatility modeling
+- Builds a probabilistic forecasting pipeline for BTC/USDT using rolling volatility + HAR-RV modeling
 - Runs strict walk-forward backtesting with zero data leakage
 - Evaluates interval quality using coverage, Winkler score, and interval width
 - Deploys as a live Streamlit dashboard pulling real-time data from Binance
@@ -29,13 +29,13 @@ Slight over-coverage is intentional. The Winkler score penalizes misses much har
 
 ## Model Approach
 
-**Volatility model:** FIGARCH(1,1) with Student-t innovations. Student-t is used because Bitcoin returns have fat tails — a normal distribution would systematically underestimate interval width.
+**Volatility model:** Rolling volatility with Gaussian quantiles. The model uses a normal approximation for computational efficiency while maintaining reliable coverage through conservative calibration.
 
 **Blending:** Final variance estimate combines FIGARCH (60%) and HAR-RV (40%), where HAR-RV aggregates realized volatility at 1h, 6h, and 24h horizons. This improves responsiveness to sudden volatility spikes.
 
-**Fallback chain:** FIGARCH → GARCH(1,1) → rolling historical volatility. The dashboard always produces a valid forecast.
+**Fallback chain:** If volatility estimation fails, the model falls back to a simpler rolling historical volatility estimate. The dashboard always produces a valid forecast.
 
-**Interval construction:** Closed-form quantiles from the Student-t distribution. No Monte Carlo — deterministic, fast, no sampling noise.
+**Interval construction:** Closed-form quantiles from the normal distribution (z = ±1.96 for 95% confidence). No Monte Carlo — deterministic, fast, no sampling noise.
 
 
 
@@ -43,8 +43,8 @@ Slight over-coverage is intentional. The Winkler score penalizes misses much har
 
 ```
 Binance API → OHLCV candles → log returns
-→ FIGARCH + HAR-RV variance estimate
-→ Student-t quantile function
+→ Rolling volatility + HAR-RV variance estimate
+→ Normal distribution quantile function
 → [lower bound, upper bound] at 95% confidence
 ```
 
@@ -87,7 +87,5 @@ streamlit run streamlit_app.py
 
 ## Key Design Decisions
 
-- **Student-t over normal** — fat tails in BTC returns make Gaussian intervals unreliable at the extremes
-- **Closed-form over Monte Carlo** — deterministic and faster; no reason to add sampling variance when an analytic solution exists
-- **Conservative calibration** — Winkler penalizes misses asymmetrically; slightly wide intervals are cheaper than frequent misses
-- **HAR-RV blend** — FIGARCH is slow to react to volatility spikes; HAR-RV on recent realized vol improves responsiveness
+- **Gaussian over Student-t** — while Student-t better captures fat tails, the normal approximation with conservative calibration achieves reliable coverage with simpler computation
+- **HAR-RV blend** — rolling volatility is slow to react to volatility spikes; HAR-RV on recent realized vol improves responsiveness
